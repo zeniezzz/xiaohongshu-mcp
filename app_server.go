@@ -70,27 +70,21 @@ func (s *AppServer) Start(port string) error {
 	return nil
 }
 
-// corsMiddleware CORS 中间件，允许所有跨域请求
+// corsMiddleware 最简单的 CORS 中间件，允许所有跨域请求
 func corsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 允许所有来源
-		c.Header("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		
-		// 允许常见的请求方法
-		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+		// 允许所有请求方法
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "*")
 		
-		// 允许常见的请求头
-		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin")
+		// 允许所有请求头
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "*")
 		
-		// 允许暴露的响应头
-		c.Header("Access-Control-Expose-Headers", "Content-Length, Content-Type")
-		
-		// 设置预检请求的缓存时间（可选）
-		c.Header("Access-Control-Max-Age", "86400") // 24小时
-		
-		// 处理预检请求（OPTIONS）
+		// 如果是预检请求（OPTIONS），直接返回 204
 		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(http.StatusNoContent)
+			c.AbortWithStatus(204)
 			return
 		}
 		
@@ -100,28 +94,29 @@ func corsMiddleware() gin.HandlerFunc {
 
 // setupRoutes 设置路由
 func setupRoutes(s *AppServer) *gin.Engine {
-	// 创建 Gin 引擎（带默认中间件）
+	// 创建 Gin 引擎
 	router := gin.Default()
 	
-	// 添加 CORS 中间件（放在所有路由之前）
+	// 添加 CORS 中间件到所有路由
 	router.Use(corsMiddleware())
 	
-	// 健康检查
+	// 健康检查接口
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "ok",
 		})
 	})
 	
-	// MCP 相关路由
-	// 这里添加你的 MCP 路由
+	// 这里添加你的其他路由
+	// 例如：MCP 相关的路由
 	if s.mcpServer != nil {
-		// 假设你的 MCP Server 有 HTTP 处理函数
-		// 例如：router.POST("/mcp", gin.WrapH(s.mcpServer.Handler()))
+		// 如果你的 MCP Server 需要暴露 HTTP 端点，在这里添加
+		// router.POST("/mcp", gin.WrapH(s.mcpServer.Handler()))
 	}
 	
 	// 其他业务路由
 	// router.GET("/api/xxx", s.handleXXX)
+	// router.POST("/api/xxx", s.handleXXX)
 	
 	return router
 }
